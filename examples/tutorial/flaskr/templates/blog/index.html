@@ -21,7 +21,7 @@
       </header>
       <p class="body">{{ post['body'] }}</p>
         <div class="gallery">
-          <img src="{{ post['signed_url'] }}"/>
+          <img src="{{ post['signed_url'] }}" style="max-width: 90%;"/>
         </div>
     </article>
     {% if not loop.last %}
