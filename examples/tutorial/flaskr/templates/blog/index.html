@@ -20,6 +20,9 @@
         {% endif %}
       </header>
       <p class="body">{{ post['body'] }}</p>
+        <div class="gallery">
+          <img src="{{ post['signed_url'] }}"/>
+        </div>
     </article>
     {% if not loop.last %}
       <hr>

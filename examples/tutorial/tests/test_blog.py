@@ -30,7 +30,7 @@ def test_author_required(app, client, auth):
     with app.app_context():
         db = get_db()
         db.execute('UPDATE post SET author_id = 2 WHERE id = 1')
-        db.commit()
+        db.session.commit()
 
     auth.login()
     # current user can't modify other user's post

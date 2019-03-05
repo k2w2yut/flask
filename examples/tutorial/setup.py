@@ -19,6 +19,9 @@ setup(
     zip_safe=False,
     install_requires=[
         'flask',
+        'psycopg2-binary',
+        'Flask-SQLAlchemy',
+        'flask-boto3',
     ],
     extras_require={
         'test': [

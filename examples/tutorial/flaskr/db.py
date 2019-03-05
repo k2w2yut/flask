@@ -1,9 +1,11 @@
-import sqlite3
+# import sqlite3
 
 import click
 from flask import current_app, g
 from flask.cli import with_appcontext
+from flask_sqlalchemy import SQLAlchemy
 
+db = SQLAlchemy()
 
 def get_db():
     """Connect to the application's configured database. The connection
@@ -11,12 +13,12 @@ def get_db():
     again.
     """
     if 'db' not in g:
-        g.db = sqlite3.connect(
-            current_app.config['DATABASE'],
-            detect_types=sqlite3.PARSE_DECLTYPES
-        )
-        g.db.row_factory = sqlite3.Row
-
+        # g.db = sqlite3.connect(
+        #     current_app.config['DATABASE'],
+        #     detect_types=sqlite3.PARSE_DECLTYPES
+        # )
+        # g.db.row_factory = sqlite3.Row
+        g.db = SQLAlchemy(current_app)
     return g.db
 
 
@@ -27,7 +29,8 @@ def close_db(e=None):
     db = g.pop('db', None)
 
     if db is not None:
-        db.close()
+        db.engine.connect().close()
+        # db.close()
 
 
 def init_db():
@@ -35,8 +38,35 @@ def init_db():
     db = get_db()
 
     with current_app.open_resource('schema.sql') as f:
-        db.executescript(f.read().decode('utf8'))
+        debug = db.engine.execute('''
+        DROP TABLE IF EXISTS users CASCADE;
+        DROP TABLE IF EXISTS posts CASCADE;
+        DROP TABLE IF EXISTS pictures;
 
+        CREATE TABLE users (
+          id BIGSERIAL,
+          username TEXT UNIQUE NOT NULL,
+          password TEXT NOT NULL,
+          CONSTRAINT users_pkey PRIMARY KEY (id)
+        )
+        WITH (
+        	OIDS=FALSE
+        ) ;
+
+        CREATE TABLE posts (
+          id BIGSERIAL,
+          author_id INTEGER NOT NULL,
+          created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          title TEXT NOT NULL,
+          body TEXT NOT NULL,
+          picture_file TEXT,
+          CONSTRAINT posts_user_pkey PRIMARY KEY (id),
+          CONSTRAINT posts_user_fkey FOREIGN KEY (author_id) REFERENCES users(id)
+        )
+        WITH (
+        	OIDS=FALSE
+        ) ;
+        ''')
 
 @click.command('init-db')
 @with_appcontext

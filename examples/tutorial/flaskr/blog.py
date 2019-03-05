@@ -5,6 +5,7 @@ from werkzeug.exceptions import abort
 
 from flaskr.auth import login_required
 from flaskr.db import get_db
+from flaskr.picture import upload_to_s3, getS3URL
 
 bp = Blueprint('blog', __name__)
 
@@ -13,12 +14,21 @@ bp = Blueprint('blog', __name__)
 def index():
     """Show all the posts, most recent first."""
     db = get_db()
-    posts = db.execute(
-        'SELECT p.id, title, body, created, author_id, username'
-        ' FROM post p JOIN user u ON p.author_id = u.id'
+    posts = db.engine.execute(
+        'SELECT p.id, title, body, created, author_id, username, picture_file'
+        ' FROM posts p JOIN users u ON p.author_id = u.id'
         ' ORDER BY created DESC'
     ).fetchall()
-    return render_template('blog/index.html', posts=posts)
+    print(posts)
+    posts_dict = []
+    for post in posts:
+        d = dict(post)
+
+        if d['picture_file']:
+            d['signed_url'] = getS3URL(d['picture_file'])
+        posts_dict.append(d)
+    print(posts_dict)
+    return render_template('blog/index.html', posts=posts_dict)
 
 
 def get_post(id, check_author=True):
@@ -33,11 +43,10 @@ def get_post(id, check_author=True):
     :raise 404: if a post with the given id doesn't exist
     :raise 403: if the current user isn't the author
     """
-    post = get_db().execute(
-        'SELECT p.id, title, body, created, author_id, username'
-        ' FROM post p JOIN user u ON p.author_id = u.id'
-        ' WHERE p.id = ?',
-        (id,)
+    post = get_db().engine.execute(
+        'SELECT p.id, title, body, created, author_id, username, picture_file'
+        ' FROM posts p JOIN users u ON p.author_id = u.id'
+        ' WHERE p.id = \'{}\''.format(id,)
     ).fetchone()
 
     if post is None:
@@ -58,19 +67,31 @@ def create():
         body = request.form['body']
         error = None
 
+
         if not title:
             error = 'Title is required.'
+
+        pic_key = None
+        if 'picture' in request.files:
+            picture = request.files['picture']
+            pic_key = upload_to_s3(picture)
+
 
         if error is not None:
             flash(error)
         else:
             db = get_db()
-            db.execute(
-                'INSERT INTO post (title, body, author_id)'
-                ' VALUES (?, ?, ?)',
-                (title, body, g.user['id'])
-            )
-            db.commit()
+            if pic_key:
+                db.engine.execute(
+                    'INSERT INTO posts (title, body, author_id, picture_file)'
+                    ' VALUES (\'{}\', \'{}\', \'{}\',\'{}\')'.format(title, body, g.user['id'],pic_key)
+                )
+            else:
+                db.engine.execute(
+                    'INSERT INTO posts (title, body, author_id)'
+                    ' VALUES (\'{}\', \'{}\', \'{}\')'.format(title, body, g.user['id'])
+                )
+            db.session.commit()
             return redirect(url_for('blog.index'))
 
     return render_template('blog/create.html')
@@ -94,11 +115,10 @@ def update(id):
             flash(error)
         else:
             db = get_db()
-            db.execute(
-                'UPDATE post SET title = ?, body = ? WHERE id = ?',
-                (title, body, id)
+            db.engine.execute(
+                'UPDATE posts SET title = \'{}\', body = \'{}\' WHERE id = \'{}\''.format(title, body, id)
             )
-            db.commit()
+            db.session.commit()
             return redirect(url_for('blog.index'))
 
     return render_template('blog/update.html', post=post)
@@ -114,6 +134,6 @@ def delete(id):
     """
     get_post(id)
     db = get_db()
-    db.execute('DELETE FROM post WHERE id = ?', (id,))
-    db.commit()
+    db.engine.execute('DELETE FROM posts WHERE id = \'{}\''.format(id,))
+    db.session.commit()
     return redirect(url_for('blog.index'))
