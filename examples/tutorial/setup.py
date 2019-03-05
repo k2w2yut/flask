@@ -22,6 +22,7 @@ setup(
         'psycopg2-binary',
         'Flask-SQLAlchemy',
         'flask-boto3',
+        'python-dotenv'
     ],
     extras_require={
         'test': [

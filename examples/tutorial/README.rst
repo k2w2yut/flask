@@ -6,6 +6,14 @@ The basic blog app built in the Flask `tutorial`_.
 .. _tutorial: http://flask.pocoo.org/docs/tutorial/
 
 
+Create packaging
+--------
+$ source venv/bin/activate
+$ export FLASK_APP='flaskr'
+$ export FLASK_EVN='production'
+$ python3 setup.py sdist bdist_wheel
+
+
 Install
 -------
 

@@ -1,33 +1,26 @@
 import os
 
 from flask import Flask
-from config import POSTGRES, BOTO3_CONFIG
+from config import *
 
 def create_app(test_config=None):
     """Create and configure an instance of the Flask application."""
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(
         # a default secret that should be overridden by instance config
-        SECRET_KEY='dev',
+        # SECRET_KEY='dev',
         # store the database in the instance folder
         # DATABASE=os.path.join(app.instance_path, 'flaskr.sqlite'),
-
-        # Use Postgres from config file instead
-        SQLALCHEMY_DATABASE_URI='postgresql://%(user)s:%(pw)s@%(host)s:%(port)s/%(db)s' % POSTGRES,
-        SQLALCHEMY_TRACK_MODIFICATIONS=False,
-        BOTO3_SERVICES=BOTO3_CONFIG['service'],
-        BOTO3_ACCESS_KEY=BOTO3_CONFIG['access_key'],
-        BOTO3_SECRET_KEY=BOTO3_CONFIG['secret_key'],
-        BOTO3_REGION=BOTO3_CONFIG['region'],
     )
-    print(app.config['SQLALCHEMY_DATABASE_URI'])
 
     if test_config is None:
         # load the instance config, if it exists, when not testing
-        app.config.from_pyfile('config.py', silent=True)
+        app.config.from_pyfile('config.py', silent=False)
     else:
         # load the test config if passed in
         app.config.update(test_config)
+
+    print(app.config['SQLALCHEMY_DATABASE_URI'])
 
     # ensure the instance folder exists
     try:

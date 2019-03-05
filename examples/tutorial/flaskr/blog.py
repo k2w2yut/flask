@@ -19,7 +19,6 @@ def index():
         ' FROM posts p JOIN users u ON p.author_id = u.id'
         ' ORDER BY created DESC'
     ).fetchall()
-    print(posts)
     posts_dict = []
     for post in posts:
         d = dict(post)
@@ -27,7 +26,6 @@ def index():
         if d['picture_file']:
             d['signed_url'] = getS3URL(d['picture_file'])
         posts_dict.append(d)
-    print(posts_dict)
     return render_template('blog/index.html', posts=posts_dict)
 
 
