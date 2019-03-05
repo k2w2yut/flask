@@ -1,4 +1,3 @@
-# import sqlite3
 
 import click
 from flask import current_app, g
@@ -38,35 +37,8 @@ def init_db():
     db = get_db()
 
     with current_app.open_resource('schema.sql') as f:
-        debug = db.engine.execute('''
-        DROP TABLE IF EXISTS users CASCADE;
-        DROP TABLE IF EXISTS posts CASCADE;
-        DROP TABLE IF EXISTS pictures;
-
-        CREATE TABLE users (
-          id BIGSERIAL,
-          username TEXT UNIQUE NOT NULL,
-          password TEXT NOT NULL,
-          CONSTRAINT users_pkey PRIMARY KEY (id)
-        )
-        WITH (
-        	OIDS=FALSE
-        ) ;
-
-        CREATE TABLE posts (
-          id BIGSERIAL,
-          author_id INTEGER NOT NULL,
-          created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          title TEXT NOT NULL,
-          body TEXT NOT NULL,
-          picture_file TEXT,
-          CONSTRAINT posts_user_pkey PRIMARY KEY (id),
-          CONSTRAINT posts_user_fkey FOREIGN KEY (author_id) REFERENCES users(id)
-        )
-        WITH (
-        	OIDS=FALSE
-        ) ;
-        ''')
+        if current_app.config['SQLALCHEMY_DATABASE_URI'] != 'sqlite:///:memory:':
+            debug = db.engine.execute(f.read().decode('utf8'))
 
 @click.command('init-db')
 @with_appcontext

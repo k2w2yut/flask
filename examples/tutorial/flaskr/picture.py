@@ -6,7 +6,6 @@ from flask import (
 from flask_boto3 import Boto3
 import os,uuid
 from werkzeug.utils import secure_filename
-from config import *
 
 boto_flask = Boto3()
 bp = Blueprint('picture', __name__)
@@ -21,7 +20,7 @@ def encode_filename(filename):
 
 def upload_to_s3(file):
     s3 = boto_flask.clients['s3']
-    bucket_name = BUCKET_NAME
+    bucket_name = current_app.config['BUCKET_NAME']
     uuid_name,encoded_filename = encode_filename(file.filename)
     try:
         extra_args = {"ContentType": file.content_type}
@@ -45,7 +44,7 @@ def getS3URL(encoded_filename):
     signed_url = s3.generate_presigned_url(
                     ClientMethod='get_object',
             Params={
-                'Bucket': BUCKET_NAME,
+                'Bucket': current_app.config['BUCKET_NAME'],
                 'Key': encoded_filename
             }
         )
